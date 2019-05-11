@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
 ```
 
 # Background
-Motivated by ASA Data Challenge Expo 2019, I proposed to address one of research question that is to describe changes in housing conditions for the first and the second-generation immigrant householders in New York City.
+Motivated by ASA Data Challenge Expo 2019, I proposed to address one research question that is to describe changes in housing conditions for the first and the second-generation immigrant householders in New York City.
 
 The data set is from the New York City Housing and Vacancy Survey (NYCHVS). The NYCHVS is a representative survey of the New York City housing stock and population. The HVS is a triennial survey with data collected about every three years. Each decade, a representative sample of housing units is selected, which represents the core sample. Field representatives collect information about each sampled unit, including those that are vacant as well as those that are occupied. For occupied units, an interview is conducted that gathers information about the reference person, any each additional member of the household, the household overall, and the household unit and building. In each survey cycle, the HVS gathers information about the core sample of housing units as well as an updated set of additional units that are sampled for each cycle to ensure that a given year’s data are representative of the citywide housing stock.
 
@@ -229,6 +229,6 @@ There is significant difference between the index of housing condition for first
 
 # Discussion
 
-One issue is that the first principle component only explains 13.65% of variance. I will consider to use more principle components to represent housing condition. Another issue is the interpretational difficulty of principle component. It is hard to show the housing condition is good or bad by larger or lower index. I will explore other method to construct index for housing condition. There is missing data issue as well (around 12% missing rate). I only performed analysis on complete data. Since most variables are dummy variables and categorical variables, I considered imputation by mode but I will explore whether there is any method making more sense.
+One issue is that the first principle component only explains 13.65% of variance. I may consider using more principle components to represent housing condition. Another issue is the interpretational difficulty of principle component. It is hard to show the housing condition is good or bad by larger or lower index. I will explore other method to construct index for housing condition. There is missing data issue as well (around 12% missing rate). I only performed analysis on complete data. Since most variables are dummy variables and categorical variables, I considered imputation by mode but I will explore whether there is any method making more sense.
 
 Moreover, so far I analyze the difference of first and second generation at each year separately. I am working on time series analysis and functional data analysis to achieve showing the difference of change in housing condition accross years for two generations.
