@@ -1,0 +1,234 @@
+---
+title: "Interactive Visualization of Housing Condition in NYC"
+author: Qi Qi
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(leaflet)
+library(tidyverse)
+library(readr)
+library(dplyr)
+require(broom)
+library(lme4)
+library(data.table)
+library(formattable)
+library(gridExtra)
+library(ggbiplot)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+```
+
+# Background
+Motivated by ASA Data Challenge Expo 2019, I proposed to address one of research question that is to describe changes in housing conditions for the first and the second-generation immigrant householders in New York City.
+
+The data set is from the New York City Housing and Vacancy Survey (NYCHVS). The NYCHVS is a representative survey of the New York City housing stock and population. The HVS is a triennial survey with data collected about every three years. Each decade, a representative sample of housing units is selected, which represents the core sample. Field representatives collect information about each sampled unit, including those that are vacant as well as those that are occupied. For occupied units, an interview is conducted that gathers information about the reference person, any each additional member of the household, the household overall, and the household unit and building. In each survey cycle, the HVS gathers information about the core sample of housing units as well as an updated set of additional units that are sampled for each cycle to ensure that a given year’s data are representative of the citywide housing stock.
+
+Linked interviews within a decade are available for the 1990s and 2000s. The current decade of data (2011, 2014, and 2017) are not able to be linked into a longitudinal file due to disclosure avoidance protections. Therefore, the variables in each year are different and the information about last year real estate tax is not available in 2017. In order to summarize and represent the change across years, I extracted the common variables in every year.
+
+# Method
+
+A R shiny app is constructed to visually show the changes in housing conditions. The map of NYC is represented in the app. Given the input of Borough (Bronx, Brooklyn, Manhatann, Queens or Staten Island) and subBorough, the corresponding region on the map is represented and zoomed in. The housing conditions include external condition of buildings (such as external wall, windows), internal condition of the building (such as elevators, floors), condition of room facilities (such as heating, kitchen facilities). Given either one of the housing condition variable as input, the changes will be shown. 
+
+I summarized the change by summary statistics of each variable for the specified region and year. The trend plot of such input variable over all avaliable years is shown in the app as well. The birth place of household and birth place of parents of household are used to classify the first the generation and the second generation immigrant householders and the classification is based on following definition: the first generation imigrant householder is whose birth place is not US; the second imigrant householder is who was born in US but the birth places of parents are both outside of US. Plots and analysis results are presented in the shiny app for comparison.
+
+# Data Analysis
+
+In the shiny app, the plots and analysis results from user specified borough and sub-borough are able to be presented. In this report, I only show the plots and analysis results for whole NYC as illustration.
+
+Figure 1 contains the plots representing the proportion of condition of exterior walls for first generation and second generation. The condition includes Missing material OR sloping/bulging outside walls, Major cracks in outside walls, Loose or hanging cornice, roofing, or other materials, Unable to observe walls and None of these problems with walls.
+
+```{r, fig.height=9, fig.width=8, fig.cap="Proportion Plot of Condition of Exterior Walls"}
+load("allNYC.Rdata")
+all.year <- c("1991","1993", "1996","1999", "2002", "2005", "2008", "2011", "2014", "2017")
+wall <- NYC[, 3:7]
+wall$generation <- NYC$generation
+wall$year <- NYC$year
+wall[wall==8]<-NA
+wall[wall==9] <- 0
+wall_new <- na.omit(wall)
+wall_new <- wall_new[, c(1,2,3,5,4,6,7)]
+
+trend1 <- double(length(all.year))
+trend2 <- double(length(all.year))
+
+sub1 <- wall_new[wall_new$generation == "First",]
+sub2 <- wall_new[wall_new$generation == "Second", ]
+  
+for (i in 1:length(all.year)){
+  trend1[i] <- sum(sub1[sub1$year==all.year[i],1])/nrow(sub1[sub1$year==all.year[i],]) * 100
+ trend2[i] <- sum(sub2[sub2$year==all.year[i],1])/nrow(sub2[sub2$year==all.year[i],]) * 100
+}
+dat1 <- cbind.data.frame(all.year, trend1)
+dat1$gen <- "First"
+colnames(dat1) <- c("Year", "Proportion", "Generation")
+
+dat2 <- cbind.data.frame(all.year, trend2)
+dat2$gen <- "Second"
+colnames(dat2) <- c("Year", "Proportion", "Generation")
+dat <- rbind(dat1, dat2)
+wall1 <-ggplot(data = dat,aes(x=Year, y=Proportion, group = Generation, color = Generation)) +
+  geom_line() +
+  ggtitle("Missing material OR sloping/bulging outside walls")+
+  theme_minimal()+
+  theme(text = element_text(size = 7))
+
+for (i in 1:length(all.year)){
+ trend1[i] <- sum(sub1[sub1$year==all.year[i],2])/nrow(sub1[sub1$year==all.year[i],]) * 100
+ trend2[i] <- sum(sub2[sub2$year==all.year[i],2])/nrow(sub2[sub2$year==all.year[i],]) * 100
+}
+dat1 <- cbind.data.frame(all.year, trend1)
+dat1$gen <- "First"
+colnames(dat1) <- c("Year", "Proportion", "Generation")
+
+dat2 <- cbind.data.frame(all.year, trend2)
+dat2$gen <- "Second"
+colnames(dat2) <- c("Year", "Proportion", "Generation")
+dat <- rbind(dat1, dat2)
+wall2 <- ggplot(data = dat,aes(x=Year, y=Proportion, group = Generation, color = Generation)) +
+  geom_line() +
+  ggtitle("Major cracks in outside walls")+
+  theme_minimal()+
+  theme(text = element_text(size = 7))
+
+for (i in 1:length(all.year)){
+  trend1[i] <- sum(sub1[sub1$year==all.year[i],3])/nrow(sub1[sub1$year==all.year[i],]) * 100
+ trend2[i] <- sum(sub2[sub2$year==all.year[i],3])/nrow(sub2[sub2$year==all.year[i],]) * 100
+}
+dat1 <- cbind.data.frame(all.year, trend1)
+dat1$gen <- "First"
+colnames(dat1) <- c("Year", "Proportion", "Generation")
+
+dat2 <- cbind.data.frame(all.year, trend2)
+dat2$gen <- "Second"
+colnames(dat2) <- c("Year", "Proportion", "Generation")
+dat <- rbind(dat1, dat2)
+wall3 <- ggplot(data = dat,aes(x=Year, y=Proportion, group = Generation, color = Generation)) +
+  geom_line() +
+  ggtitle("Loose or hanging cornice, roofing, or other materials")+
+  theme_minimal()+
+  theme(text = element_text(size = 7))
+
+for (i in 1:length(all.year)){
+ trend1[i] <- sum(sub1[sub1$year==all.year[i],4])/nrow(sub1[sub1$year==all.year[i],]) * 100
+ trend2[i] <- sum(sub2[sub2$year==all.year[i],4])/nrow(sub2[sub2$year==all.year[i],]) * 100
+}
+dat1 <- cbind.data.frame(all.year, trend1)
+dat1$gen <- "First"
+colnames(dat1) <- c("Year", "Proportion", "Generation")
+
+dat2 <- cbind.data.frame(all.year, trend2)
+dat2$gen <- "Second"
+colnames(dat2) <- c("Year", "Proportion", "Generation")
+dat <- rbind(dat1, dat2)
+wall4 <- ggplot(data = dat,aes(x=Year, y=Proportion, group = Generation, color = Generation)) +
+  geom_line() +
+  ggtitle("Unable to observe walls")+
+  theme_minimal()+
+  theme(text = element_text(size = 7))
+
+for (i in 1:length(all.year)){
+  trend1[i] <- sum(sub1[sub1$year==all.year[i],5])/nrow(sub1[sub1$year==all.year[i],]) * 100
+ trend2[i] <- sum(sub2[sub2$year==all.year[i],5])/nrow(sub2[sub2$year==all.year[i],]) * 100
+}
+dat1 <- cbind.data.frame(all.year, trend1)
+dat1$gen <- "First"
+colnames(dat1) <- c("Year", "Proportion", "Generation")
+
+dat2 <- cbind.data.frame(all.year, trend2)
+dat2$gen <- "Second"
+colnames(dat2) <- c("Year", "Proportion", "Generation")
+dat <- rbind(dat1, dat2)
+wall5 <- ggplot(data = dat,aes(x=Year, y=Proportion, group = Generation, color = Generation)) +
+  geom_line() +
+  ggtitle("None of these problems with walls")+
+  theme_minimal()+
+  theme(text = element_text(size = 7))
+
+grid.arrange(wall1, wall2, wall3, wall4,wall5, ncol =2)
+```
+
+According to the plots, we can notice that the trend of condition of walls for first generation is more flat than that for second generation. When we concentrate on the last plot, it can be noticed that the condition of walls for the first generation is improving steadily acorss years. The condition of walls for the second generation, however, has a dramatic change from 2012 to 2017. 
+
+In order to test whether significant difference exsits between first and second generation, results from chi-squared test are provided in the shiny app. Table 2, an example for condition of walls, shows p-values obtained from chi-squared test.
+
+
+```{r}
+pvalue <- matrix(0, 5, length(all.year))
+for (i in 1:length(all.year)){
+  for (j in 1:5) {
+    pvalue[j,i] <- round(chisq.test(table(wall_new[wall_new$year == all.year[i], c(j,6)]))$p.value, 3)
+  }
+}
+pvalue <- data.frame(pvalue)
+colnames(pvalue) <- all.year
+rownames(pvalue) <- c("Missing material OR sloping/bulging", "Major cracks in outside walls", "Loose or hanging cornice, roofing", "Unable to observe walls", "None of these problems")
+knitr::kable(pvalue, caption = "p-values Obtained from Chi-squared Test")
+
+
+```
+
+From the plot of non-problem on walls (last one in Figure 1), we can notice in 2005, the proportion for second generation is very different from the proportion for first generation. From Table 2, the chi-squared test shows no significant association between non-problem on walls and generation in 2005. Moreover, in 1991, the plot shows very close proportion of non-problem for first and second generation, which conflict with significant result shown in Table 2. These interesting contradictions may be caused by the huge difference between sample size for first generation (100,742) and second generation (6,368).
+
+To investigate which factors alter the housing condition, I provide results from logistic regression on housing condition in the app. Table 3 and Table 4 are the examples from logistic regression on non-problem exsiting on exterior walls. There are some other variables included in the regression but not shown here.
+
+```{r}
+wall <- NYC[, c(6,23,24, 85,29, 59,61, 72,35, 99, 98)]
+wall$`Condition of Exterior Walls: None of these problems with walls`[wall$`Condition of Exterior Walls: None of these problems with walls` == 8] <-NA
+wall$`Condition of Exterior Walls: None of these problems with walls`[wall$`Condition of Exterior Walls: None of these problems with walls`==9] <- 0
+wall$`Total Household Income Recode`[wall$`Total Household Income Recode`==999998] <- NA
+wall$`Total Household Income Recode`[wall$`Total Household Income Recode`==999999] <- 0
+wall$`Monthly cost (electric)`[wall$`Monthly cost (electric)`==998]<- NA
+wall$`Monthly cost (electric)`[wall$`Monthly cost (electric)`==999] <- NA
+wall$`Monthly cost (gas)`[wall$`Monthly cost (gas)`==998] <- NA
+wall$`Monthly cost (gas)`[wall$`Monthly cost (gas)`==999] <- NA
+wall_new <- na.omit(wall)
+
+mod <- glm(`Condition of Exterior Walls: None of these problems with walls` ~ `Householder's Sex` + `Householder's Age Recode` + `Total Household Income Recode` +`First Occupants of Unit`+`Monthly cost (electric)`+ `Monthly cost (gas)`+`Tenure 1`+`Presence of mice or rats`, data = wall_new[wall_new$generation=="First",], family = "binomial")
+coef <- tidy(mod)
+coef[, 2:4] <- round(coef[, 2:4],3)
+coef[, 5] <- round(coef[, 5], 4)
+knitr::kable(coef, caption = "Logistic Regression on Condition of Exterior Walls for First Generation Imigrant Housholder")
+
+mod <- glm(`Condition of Exterior Walls: None of these problems with walls` ~ `Householder's Sex` + `Householder's Age Recode` + `Total Household Income Recode` +`First Occupants of Unit`+`Monthly cost (electric)`+ `Monthly cost (gas)`+`Tenure 1`+`Presence of mice or rats`, data = wall_new[wall_new$generation=="Second",], family = "binomial")
+coef <- tidy(mod)
+coef[, 2:4] <- round(coef[, 2:4],3)
+coef[, 5] <- round(coef[, 5], 4)
+knitr::kable(coef, caption = "Logistic Regression on Condition of Exterior Walls for Second Generation Imigrant Householder")
+```
+
+Based on these two tables, we can find that for both first and second generation, first occupant of unit and no presence of mice or rate provide larger odds while gender of householder does not have significantly different influence on wall condition. For first generation, higher monthly electric cost, higher monthly gas cost and owner of the house (compared with renter) provide higher odds. For second generation, older householder and higher total household income can provide higher odds. The factors affecting wall condition are different for first and second generation imigrant householder.
+
+I considered principle component analysis to generate an index to represent the housing condition and provided further comparison of first and second generation. With all variables related to housing condition, I performed principle component analysis and generated the index for housing condition by the first principle component. With such index, I provided the p-values obtained from t test in Table 4 to represent the difference between first and second generation.
+
+
+```{r}
+condition <- NYC[, c(3:20, 21, 22,53, 54, 55, 69, 70, 74, 75, 76)]
+condition[condition==8] <- NA
+condition$`Number of heating equipment breakdowns`[condition$`Number of heating equipment breakdowns`==9] <- 0
+condition <- cbind.data.frame(condition, NYC[, c(47, 50:52,98,99)])
+condition$`Number of rooms`[condition$`Number of rooms`==9] <- NA
+condition_new <-na.omit(condition)
+pca <- prcomp(condition_new[,1:32], center = TRUE,scale. = TRUE)
+
+condition_new$index <- pca$x[,1]
+
+p <- matrix(0, length(all.year)+1, 1)
+p[1, ] <- t.test(index ~ generation, data = condition_new)$p.value
+for(i in 1:length(all.year)){
+  p[i, ] <- t.test(index ~ generation, data = condition_new[condition_new$year == all.year[i],])$p.value
+}
+p <- data.frame(round(t(p), 4))
+colnames(p)[1] <- "Any"
+colnames(p)[2:11] <- all.year
+row.names(p) <- "p-value"
+knitr::kable(p, caption = "p-values Obtained from t Test")
+```
+
+There is significant difference between the index of housing condition for first generation and index for second generation not regrading years. The difference is not significant in 1999, 2002, 2005, 2011 and 2014.
+
+# Discussion
+
+One issue is that the first principle component only explains 13.65% of variance. I will consider to use more principle components to represent housing condition. Another issue is the interpretational difficulty of principle component. It is hard to show the housing condition is good or bad by larger or lower index. I will explore other method to construct index for housing condition. There is missing data issue as well (around 12% missing rate). I only performed analysis on complete data. Since most variables are dummy variables and categorical variables, I considered imputation by mode but I will explore whether there is any method making more sense.
+
+Moreover, so far I analyze the difference of first and second generation at each year separately. I am working on time series analysis and functional data analysis to achieve showing the difference of change in housing condition accross years for two generations.
